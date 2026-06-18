@@ -118,12 +118,6 @@ def main(args):
             with torch.no_grad():
                 predictions = model([image.to(device)]) #mps에서 연산
             pred = predictions[0]
-            #print(predictions)
-            #best_score_idx = torch.argmax(pred['scores']).item()
-            # print(pred['scores'],best_score_idx)
-            # print(pred['masks'],pred['masks'].shape)
-            
-            #x_points, y_mins, y_means, y_maxs = find_out_points(mask)
             
             mask_on_image, instances = draw_mask_on_image(image_path,pred, score_threshold=0.8)
             size = mask_on_image.shape[:2]
@@ -218,9 +212,9 @@ def ruled_inspection(instances,image):
     short_lists = instances['short']
     insufficient_lists = instances['insufficient']
     no_solder_lists = instances['no_solder']
-    solder_ball = instances['solder_ball']
+    solder_ball_lists = instances['solder_ball']
 
-    if short_lists or insufficient_lists or no_solder_lists or solder_ball:
+    if short_lists or insufficient_lists or no_solder_lists or solder_ball_lists :
         result = 'NG'
         color = (0,0,255)
     else:
