@@ -11,7 +11,7 @@ def main():
     retrain_dir = "need_retrain"
     os.makedirs(retrain_dir, exist_ok=True)
 
-    image_dir = os.path.join("dataset", "test")
+    image_dir = os.path.join("dataset", "solderball")
     val_images = glob(os.path.join(image_dir, '*.JPG'))
 
     idx = 0
@@ -21,13 +21,15 @@ def main():
         
         begin_time = time.time() 
         image = cv2.imread(image_path)
+        image_np = image.copy()
         data = image.flatten().tobytes() 
         res = requests.post('http://127.0.0.1:5000/predict', data=data, timeout=10)
         if res.status_code == 200:
             instances = json.loads(res.text)
+            instances = find_solderball(image_np,instances) #return한 mask 받음
             image = draw_mask_on_image(instances, image)  # 불량 위치를 이미지에 표시
             image = ruled_inspection(instances, image)    # PASS/FAIL 룰베이스 판정
-                        
+
         cv2.imshow('output', image)
         elapsed_time = time.time()-begin_time
         total_time.append(elapsed_time)
@@ -56,6 +58,43 @@ def main():
             idx = len(val_images)-1
             # break
     print("Average Elapsed Time:", np.mean(total_time))
+
+def find_solderball(image, instances):
+    h, w, c = image.shape
+    mask = np.zeros((h,w),dtype=np.uint8)
+    for key in instances.keys():
+        polygons = instances[key] #[[x,y,x,y...],[x,y,x,y...]]
+        for polygon in polygons: #[x,y,x,y...]
+            polygon = np.array(polygon).reshape(-1,2)
+            cv2.fillPoly(mask, [polygon], 255)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    mask = cv2.dilate(mask,kernel,iterations=1)
+
+    #crop image
+    image = image[150:450, 150:450]
+    mask = mask[150:450, 150:450]
+
+    image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+
+    #1. find contours 사용하는 방법
+    contours,_ = cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE) #마스크 윤곽선 따기 (이미지 위에 오버랩 했을 때 잘보일려고), ([ [x,y], [x,y] ...])
+    image = cv2.fillPoly(image, contours, color = 0)
+    _, image = cv2.threshold(image, 80, 255, cv2.THRESH_BINARY) #이미지 이진화:0과255 2가지만 존재하도록 이진화함.
+
+    #find solder ball
+    contours,_ = cv2.findContours(image,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE) #마스크 윤곽선 따기 (이미지 위에 오버랩 했을 때 잘보일려고), ([ [x,y], [x,y] ...])
+    
+    for contour in contours:
+        contour = contour.squeeze()
+        contour += np.array([150,150]) #좌표원복
+        contour = contour.flatten().tolist()
+        instances['solder_ball'].append(contour)
+
+    # cv2.imshow('mask', mask)
+    # cv2.imshow('image', image)
+    # cv2.waitKey()
+
+    return instances
 
 def draw_mask_on_image(instances, image):
 
