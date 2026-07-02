@@ -95,6 +95,7 @@ def predict():
         cv2.imwrite('mask_on_image.png',mask_on_image) #결과 이미지 로컬 저장
     return jsonify(instances)
 
+
 def draw_mask_on_image(image, pred,score_threshold=0.8):
 
     h,w,c = image.shape
@@ -148,11 +149,11 @@ def draw_mask_on_image(image, pred,score_threshold=0.8):
         if label==5 :
             solder_ball.append(polygon)
 
-    instances = {'ok' : [], #{[x,y,x,y...],[x,y,x,y...]}
-                 'short' : [], #{[x,y,x,y...],[x,y,x,y...]}
-                 'insufficient' : [], #{[x,y,x,y...],[x,y,x,y...]}
-                 'no_solder' : [], #{[x,y,x,y...],[x,y,x,y...]}
-                 'solder_ball' : []} #{[x,y,x,y...],[x,y,x,y...]}
+    instances = {'ok' : [], #[[x,y,x,y...],[x,y,x,y...]]
+                 'short' : [], #[[x,y,x,y...],[x,y,x,y...]]
+                 'insufficient' : [], #[[x,y,x,y...],[x,y,x,y...]]
+                 'no_solder' : [], #[[x,y,x,y...],[x,y,x,y...]]
+                 'solder_ball' : []} #[[x,y,x,y...],[x,y,x,y...]]
 
     instances['ok'] = ok
     instances['short'] = short
@@ -167,4 +168,4 @@ def draw_mask_on_image(image, pred,score_threshold=0.8):
 
 if __name__ == '__main__':
     # 서버 실행 (debug=True는 코드가 바뀔 때마다 서버 자동 재시작)
-    app.run(host="127.0.0.1", debug=True, port=5000)
+    app.run(host="127.0.0.1", debug=False, port=5000)
